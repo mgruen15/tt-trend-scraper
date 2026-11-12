@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TikTok Trend Radar</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f4f2;
+  --surface: #fcfcfb;
+  --surface-2: #f0efec;
+  --border: #e2e1dc;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --text-3: #7a7974;
+  --accent: #2a78d6;
+  --accent-soft: #cde2fb;
+  --spark: #2a78d6;
+  --spark-fill: rgba(42,120,214,.12);
+  --good: #0ca30c;
+  --good-text: #006300;
+  --warn: #fab219;
+  --warn-text: #8a5a00;
+  --crit: #d03b3b;
+  --crit-text: #b02a2a;
+  --new: #6250d6;
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111110;
+    --surface: #1a1a19;
+    --surface-2: #242422;
+    --border: #2f2f2c;
+    --text: #f0efec;
+    --text-2: #c3c2b7;
+    --text-3: #8e8d85;
+    --accent: #3987e5;
+    --accent-soft: #1c3a5e;
+    --spark: #5598e7;
+    --spark-fill: rgba(85,152,231,.16);
+    --good-text: #4fcf4f;
+    --warn-text: #fab219;
+    --crit-text: #ef7a7a;
+    --new: #9085e9;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111110;
+  --surface: #1a1a19;
+  --surface-2: #242422;
+  --border: #2f2f2c;
+  --text: #f0efec;
+  --text-2: #c3c2b7;
+  --text-3: #8e8d85;
+  --accent: #3987e5;
+  --accent-soft: #1c3a5e;
+  --spark: #5598e7;
+  --spark-fill: rgba(85,152,231,.16);
+  --good-text: #4fcf4f;
+  --warn-text: #fab219;
+  --crit-text: #ef7a7a;
+  --new: #9085e9;
+  --shadow: none;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px 48px; }
+
+/* Header */
+header.top {
+  position: sticky; top: 0; z-index: 10;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+header.top .wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-top: 12px; padding-bottom: 12px; }
+.brand { display: flex; flex-direction: column; margin-right: auto; }
+.brand h1 { font-size: 18px; margin: 0; letter-spacing: -.01em; }
+.brand .meta { color: var(--text-3); font-size: 12px; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+select, input[type=search] {
+  font: inherit; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; min-height: 36px;
+}
+input[type=search] { min-width: 0; width: 200px; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button {
+  font: inherit; font-size: 13px; border: 0; background: transparent; color: var(--text-2);
+  padding: 6px 12px; border-radius: 7px; cursor: pointer; min-height: 30px;
+}
+.seg button[aria-pressed=true] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); font-weight: 600; }
+
+/* Sections */
+section { margin-top: 28px; }
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 12px; }
+.sec-head h2 { font-size: 16px; margin: 0; }
+.sec-head p { margin: 0; color: var(--text-3); font-size: 13px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+.notice { margin-top: 16px; padding: 10px 14px; border-radius: 10px; background: var(--accent-soft); color: var(--text); font-size: 13px; }
+
+/* Highlights */
+.highlights { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.hl { padding: 14px 16px; min-width: 0; }
+.hl .label { font-size: 12px; color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+.hl .value { font-size: 18px; font-weight: 650; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hl .sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+
+/* Top 3 */
+.top3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.tcard { padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tcard .row1 { display: flex; align-items: center; gap: 10px; }
+.rank { font-size: 13px; font-weight: 700; color: var(--text-3); min-width: 22px; }
+.tcard .rank { font-size: 22px; color: var(--text); }
+.tag { font-weight: 650; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nums { display: flex; gap: 18px; }
+.num .v { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.num .k { font-size: 12px; color: var(--text-3); }
+.creators { font-size: 12px; color: var(--text-2); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.creators a { color: var(--text-2); }
+
+/* Badges */
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; border: 1px solid var(--border); color: var(--text-2); }
+.badge .ico { font-size: 10px; }
+.m-rising { color: var(--good-text); border-color: color-mix(in srgb, var(--good) 45%, transparent); }
+.m-rising .ico { color: var(--good); }
+.m-peak { color: var(--warn-text); border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
+.m-peak .ico { color: var(--warn); }
+.m-fading { color: var(--crit-text); border-color: color-mix(in srgb, var(--crit) 45%, transparent); }
+.m-fading .ico { color: var(--crit); }
+.b-new { color: #fff; background: var(--new); border-color: var(--new); font-size: 10px; padding: 1px 6px; letter-spacing: .04em; }
+.chip { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 6px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+.chip.on { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+
+/* Filters */
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.filters .spacer { flex: 1; }
+
+/* Table */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+th { font-size: 12px; font-weight: 600; color: var(--text-3); white-space: nowrap; position: sticky; top: 0; background: var(--surface); }
+th.sortable { cursor: pointer; user-select: none; }
+th.sortable:hover { color: var(--text); }
+th .arr { opacity: .8; }
+td.r, th.r { text-align: right; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: var(--surface-2); }
+.tagcell { display: flex; align-items: center; gap: 6px; min-width: 160px; }
+.tagcell a { font-weight: 600; }
+.sub-num { display: block; font-size: 11px; color: var(--text-3); }
+.delta-up { color: var(--good-text); }
+.empty { padding: 24px; text-align: center; color: var(--text-3); }
+.more { display: block; width: 100%; padding: 10px; font: inherit; color: var(--accent); background: transparent; border: 0; border-top: 1px solid var(--border); cursor: pointer; }
+
+/* Global + industries */
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.list { list-style: none; margin: 0; padding: 4px 0; }
+.list li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 9px 16px; border-bottom: 1px solid var(--border); }
+.list li:last-child { border-bottom: 0; }
+.list .countries { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 4px; }
+.list .right { text-align: right; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ind-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.ind { padding: 12px 14px; min-width: 0; }
+.ind h3 { margin: 0 0 6px; font-size: 13px; color: var(--text-2); font-weight: 600; }
+.ind ol { margin: 0; padding: 0; list-style: none; }
+.ind li { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; }
+.ind li a { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ind li .v { color: var(--text-3); font-variant-numeric: tabular-nums; font-size: 12px; }
+
+/* Sparkline + tooltip */
+svg.spark { display: block; overflow: visible; }
+svg.spark .line { fill: none; stroke: var(--spark); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+svg.spark .area { fill: var(--spark-fill); stroke: none; }
+svg.spark .dot { fill: var(--spark); stroke: var(--surface); stroke-width: 2; }
+svg.spark .cross { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 2 2; }
+.tip {
+  position: fixed; z-index: 50; pointer-events: none; padding: 6px 9px; border-radius: 8px;
+  background: var(--text); color: var(--bg); font-size: 12px; white-space: nowrap; transform: translate(-50%, calc(-100% - 10px));
+  opacity: 0; transition: opacity .08s;
+}
+.tip.show { opacity: 1; }
+
+footer { margin-top: 36px; color: var(--text-3); font-size: 12px; }
+footer p { margin: 4px 0; }
+
+@media (max-width: 1000px) {
+  .col-hide-md { display: none; }
+}
+@media (max-width: 900px) {
+  .highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .top3 { grid-template-columns: 1fr; }
+  .two { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  header.top { position: static; }
+  .controls { width: 100%; flex-wrap: nowrap; }
+  .controls select { flex: 1; min-width: 0; }
+  .seg button { padding: 6px 9px; }
+  input[type=search] { width: 100%; }
+  .filters .spacer { display: none; }
+  .col-hide-sm { display: none; }
+  th, td { padding: 8px; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <h1>TikTok Trend Radar</h1>
+      <span class="meta" id="meta"></span>
+    </div>
+    <div class="controls">
+      <label class="sr" for="country" hidden>Land</label>
+      <select id="country" aria-label="Land"></select>
+      <div class="seg" id="period" role="group" aria-label="Zeitraum"></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="notice"></div>
+
+  <section aria-labelledby="h-hl">
+    <div class="sec-head"><h2 id="h-hl">Auf einen Blick</h2></div>
+    <div class="highlights" id="highlights"></div>
+  </section>
+
+  <section aria-labelledby="h-top">
+    <div class="sec-head">
+      <h2 id="h-top">Offizielle Top 3</h2>
+      <p>Ranking des Creative Centers über alle Branchen</p>
+    </div>
+    <div class="top3" id="top3"></div>
+  </section>
+
+  <section aria-labelledby="h-radar">
+    <div class="sec-head">
+      <h2 id="h-radar">Trend-Radar</h2>
+      <p id="radar-sub">Alle Trend-Hashtags des Landes (Top 3 je Branche, zusammengeführt)</p>
+    </div>
+    <div class="filters">
+      <div class="seg" id="mfilter" role="group" aria-label="Momentum-Filter"></div>
+      <select id="ifilter" aria-label="Branche"></select>
+      <span class="spacer"></span>
+      <input type="search" id="search" placeholder="Hashtag suchen…" aria-label="Hashtag suchen">
+    </div>
+    <div class="card table-wrap">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <button class="more" id="more" hidden></button>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-geo">
+    <div class="two">
+      <div>
+        <div class="sec-head">
+          <h2 id="h-geo">Länderübergreifend</h2>
+          <p>Hashtags, die in mehreren Ländern gleichzeitig trenden</p>
+        </div>
+        <div class="card"><ul class="list" id="global"></ul></div>
+      </div>
+      <div>
+        <div class="sec-head">
+          <h2>Gerade am Steigen</h2>
+          <p>Kurve zeigt nach oben, sortiert nach Views</p>
+        </div>
+        <div class="card"><ul class="list" id="rising"></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-ind">
+    <div class="sec-head">
+      <h2 id="h-ind">Nach Branche</h2>
+      <p>Top 3 je Branche im gewählten Land</p>
+    </div>
+    <div class="ind-grid" id="industries"></div>
+  </section>
+
+  <footer>
+    <p>Quelle: TikTok Creative Center (öffentliche Hashtag-Trends, ohne Login max. Top 3 je Abfrage). Views/Posts beziehen sich auf den gewählten Zeitraum.</p>
+    <p>Momentum aus der Popularitätskurve: <b>Steigend</b> = Höchstwert ganz aktuell und Kurve klar wachsend · <b>Hoch</b> = weiterhin auf hohem Niveau (≥ 60 % des Höchstwerts) · <b>Abflauend</b> = Höhepunkt vorbei, Kurve unter 60 % · <b>Neu</b> = erstmals in den letzten 24 h erfasst.</p>
+    <p id="stats"></p>
+  </footer>
+</main>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+const DATA = /*__TREND_DATA__*/null;
+
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const fmt = new Intl.NumberFormat("de-DE", { notation: "compact", maximumFractionDigits: 1 });
+  const fmtFull = new Intl.NumberFormat("de-DE");
+  const n = (v) => (v == null ? "–" : fmt.format(v));
+  const tagUrl = (t) => "https://www.tiktok.com/tag/" + encodeURIComponent(t);
+  const userUrl = (h) => "https://www.tiktok.com/@" + encodeURIComponent(h);
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+  };
+
+  if (!DATA) {
+    document.querySelector("main").innerHTML = '<p class="empty">Noch keine Daten – bitte zuerst <code>python -m tt_trends.scrape</code> ausführen.</p>';
+    return;
+  }
+
+  const MOMENTUM = {
+    rising: { label: "Steigend", ico: "▲", cls: "m-rising", order: 0 },
+    peak: { label: "Hoch", ico: "●", cls: "m-peak", order: 1 },
+    steady: { label: "Stabil", ico: "■", cls: "", order: 2 },
+    fading: { label: "Abflauend", ico: "▼", cls: "m-fading", order: 3 },
+  };
+  const PERIOD_LABEL = { "7": "7 Tage", "30": "30 Tage", "90": "90 Tage" };
+  const PAGE = 25;
+
+  const state = {
+    country: DATA.defaultCountry,
+    period: "7",
+    momentum: "all",
+    industry: "all",
+    q: "",
+    sort: "default",
+    dir: -1,
+    shown: PAGE,
+  };
+
+  // ---- state <-> URL hash / storage ----
+  function readHash() {
+    const [c, p] = location.hash.replace(/^#/, "").split("/");
+    if (c && DATA.data[c.toUpperCase()]) state.country = c.toUpperCase();
+    else {
+      const saved = store.get("ttr-country");
+      if (saved && DATA.data[saved]) state.country = saved;
+    }
+    if (p && DATA.periods.includes(p)) state.period = p;
+    if (!DATA.data[state.country]) state.country = Object.keys(DATA.data)[0];
+  }
+  function writeHash() {
+    history.replaceState(null, "", "#" + state.country + "/" + state.period);
+    store.set("ttr-country", state.country);
+  }
+
+  // ---- small components ----
+  function badge(m) {
+    const d = MOMENTUM[m] || MOMENTUM.steady;
+    return `<span class="badge ${d.cls}"><span class="ico" aria-hidden="true">${d.ico}</span>${d.label}</span>`;
+  }
+  function miniBadge(m) {
+    const d = MOMENTUM[m] || MOMENTUM.steady;
+    return `<span class="badge ${d.cls}" title="${d.label}" aria-label="${d.label}"><span class="ico" aria-hidden="true">${d.ico}</span></span>`;
+  }
+  const newBadge = (it) => (it.isNew ? '<span class="badge b-new" title="Erstmals in den letzten 24 h erfasst">NEU</span>' : "");
+  const indName = (k) => DATA.industries[k] || "Sonstige";
+  const indChips = (list) => (list || []).map((k) => `<span class="chip">${esc(indName(k))}</span>`).join(" ");
+
+  function spark(curve, w, h, period) {
+    if (!curve || curve.length < 2) return '<span class="sub-num">–</span>';
+    const max = Math.max(100, ...curve), pad = 3;
+    const step = (w - pad * 2) / (curve.length - 1);
+    const pts = curve.map((v, i) => [pad + i * step, h - pad - (v / max) * (h - pad * 2)]);
+    const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("");
+    const area = line + `L${pts[pts.length - 1][0].toFixed(1)} ${h}L${pts[0][0].toFixed(1)} ${h}Z`;
+    const last = pts[pts.length - 1];
+    return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" data-curve="${curve.join(",")}" data-period="${period}" role="img" aria-label="Popularitätsverlauf, aktuell ${curve[curve.length - 1]} von 100">
+      <path class="area" d="${area}"/><path class="line" d="${line}"/>
+      <circle class="dot" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.5"/></svg>`;
+  }
+
+  // Tooltip for sparklines (crosshair + value).
+  const tip = $("tip");
+  document.addEventListener("pointermove", (e) => {
+    const svg = e.target.closest && e.target.closest("svg.spark");
+    document.querySelectorAll("svg.spark .cross").forEach((x) => x.remove());
+    if (!svg) { tip.classList.remove("show"); return; }
+    const curve = svg.dataset.curve.split(",").map(Number);
+    const r = svg.getBoundingClientRect();
+    const w = r.width, pad = 3, step = (w - pad * 2) / (curve.length - 1);
+    const i = Math.max(0, Math.min(curve.length - 1, Math.round((e.clientX - r.left - pad) / step)));
+    const x = pad + i * step;
+    const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    ln.setAttribute("class", "cross"); ln.setAttribute("x1", x); ln.setAttribute("x2", x);
+    ln.setAttribute("y1", 0); ln.setAttribute("y2", r.height);
+    svg.prepend(ln);
+    const ago = curve.length - 1 - i;
+    const when = ago === 0 ? "letzter Datenpunkt" : `${ago} Datenpunkt${ago > 1 ? "e" : ""} zuvor`;
+    tip.innerHTML = `<b>${curve[i]}</b> / 100 Popularität · ${when}`;
+    tip.style.left = r.left + x + "px";
+    tip.style.top = r.top + "px";
+    tip.classList.add("show");
+  });
+
+  // ---- controls ----
+  function buildControls() {
+    const sel = $("country");
+    sel.innerHTML = Object.entries(DATA.countries)
+      .filter(([c]) => DATA.data[c])
+      .map(([c, name]) => `<option value="${c}">${esc(name)} (${c})</option>`).join("");
+    sel.value = state.country;
+    sel.onchange = () => { state.country = sel.value; resetView(); render(); };
+
+    const seg = $("period");
+    seg.innerHTML = DATA.periods.map((p) => `<button type="button" data-p="${p}">${PERIOD_LABEL[p] || p + " Tage"}</button>`).join("");
+    seg.onclick = (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      state.period = b.dataset.p; resetView(); render();
+    };
+
+    const mf = $("mfilter");
+    const mopts = [["all", "Alle"], ["rising", "▲ Steigend"], ["peak", "● Hoch"], ["fading", "▼ Abflauend"]];
+    mf.innerHTML = mopts.map(([k, l]) => `<button type="button" data-m="${k}">${l}</button>`).join("");
+    mf.onclick = (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      state.momentum = b.dataset.m; state.shown = PAGE; renderRadar();
+    };
+    $("ifilter").onchange = (e) => { state.industry = e.target.value; state.shown = PAGE; renderRadar(); };
+    $("search").oninput = (e) => { state.q = e.target.value.trim().toLowerCase(); state.shown = PAGE; renderRadar(); };
+    $("more").onclick = () => { state.shown += PAGE; renderRadar(); };
+  }
+  function resetView() { state.industry = "all"; state.shown = PAGE; }
+
+  const block = () => (DATA.data[state.country] || {})[state.period] || { items: [], top: [] };
+
+  // ---- sections ----
+  function renderMeta() {
+    const d = new Date(DATA.generatedAt);
+    const hours = Math.round((Date.now() - d.getTime()) / 36e5);
+    const rel = hours < 1 ? "gerade eben" : hours < 48 ? `vor ${hours} Std.` : `vor ${Math.round(hours / 24)} Tagen`;
+    $("meta").textContent = `Stand: ${d.toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" })} (${rel})`;
+    $("stats").textContent = `Letzter Lauf: ${DATA.stats.requests} Abfragen, ${DATA.stats.failed} fehlgeschlagen.`;
+    $("country").value = state.country;
+    document.querySelectorAll("#period button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.p === state.period));
+    const limited = !(block().items.length > block().top.length);
+    $("notice").innerHTML = limited
+      ? `<div class="notice">Für ${PERIOD_LABEL[state.period]} liefert das Creative Center ohne Login nur die Gesamt-Top-3 – für die Branchen-Ansicht 7 oder 30 Tage wählen.</div>`
+      : "";
+  }
+
+  function renderHighlights() {
+    const items = block().items;
+    const top = items.find((i) => i.ranks && i.ranks.all === 1);
+    const rising = items.filter((i) => i.momentum === "rising" && i !== top).sort((a, b) => b.views - a.views)[0];
+    const mostViews = items.filter((i) => i !== top && i !== rising).sort((a, b) => b.views - a.views)[0];
+    const newOnes = items.filter((i) => i.isNew);
+    const shown = new Set([top, rising, mostViews].filter(Boolean).map((i) => i.name));
+    const glob = (DATA.global[state.period] || []).find((g) => g.countries.includes(state.country) && !shown.has(g.name));
+    const tile = (label, value, sub, href) => `<div class="card hl"><div class="label">${label}</div>
+      <div class="value">${href ? `<a href="${href}" target="_blank" rel="noopener">${esc(value)}</a>` : esc(value)}</div><div class="sub">${sub}</div></div>`;
+    $("highlights").innerHTML = [
+      top ? tile("Platz 1", "#" + top.name, `${n(top.views)} Views · ${badge(top.momentum)}`, tagUrl(top.name)) : tile("Platz 1", "–", ""),
+      rising ? tile("Stärkster Aufsteiger", "#" + rising.name, `${n(rising.views)} Views · ${esc(indName(rising.industries[0]))}`, tagUrl(rising.name)) : tile("Stärkster Aufsteiger", "–", "keine steigende Kurve"),
+      mostViews ? tile(rising ? "Views-Spitze" : "Meiste Views", "#" + mostViews.name, `${n(mostViews.views)} Views · ${n(mostViews.posts)} Posts`, tagUrl(mostViews.name)) : tile("Meiste Views", "–", ""),
+      glob ? tile("Größter globaler Trend", "#" + glob.name, `in ${glob.countries.length} Ländern · ${n(glob.views)} Views`, tagUrl(glob.name))
+           : tile("Neu seit 24 h", String(newOnes.length), "Hashtags erstmals erfasst"),
+    ].join("");
+  }
+
+  function renderTop3() {
+    const b = block();
+    const items = b.top.map((name) => b.items.find((i) => i.name === name)).filter(Boolean)
+      .sort((a, c) => a.ranks.all - c.ranks.all);
+    if (!items.length) { $("top3").innerHTML = '<p class="empty card">Keine Daten.</p>'; return; }
+    $("top3").innerHTML = items.map((it) => `
+      <article class="card tcard">
+        <div class="row1"><span class="rank">${it.ranks.all}</span>
+          <a class="tag" href="${tagUrl(it.name)}" target="_blank" rel="noopener">#${esc(it.name)}</a>${newBadge(it)}
+          <span style="margin-left:auto">${badge(it.momentum)}</span></div>
+        <div>${indChips(it.industries)}</div>
+        <div class="spark-slot" data-name="${esc(it.name)}"></div>
+        <div class="nums">
+          <div class="num"><div class="v">${n(it.views)}</div><div class="k">Views</div></div>
+          <div class="num"><div class="v">${n(it.posts)}</div><div class="k">Posts</div></div>
+          <div class="num"><div class="v">${n(it.viewsPerPost)}</div><div class="k">Ø Views/Post</div></div>
+        </div>
+        ${it.creators.length ? `<div class="creators"><span>Top-Creator:</span>${it.creators.map((c) => `<a href="${userUrl(c.handle)}" target="_blank" rel="noopener">@${esc(c.handle)}</a> <span class="sub-num" style="display:inline">${n(c.followers)}</span>`).join("")}</div>` : ""}
+      </article>`).join("");
+    // Size the card sparklines to the actual card width.
+    document.querySelectorAll("#top3 .spark-slot").forEach((slot) => {
+      const it = items.find((i) => i.name === slot.dataset.name);
+      slot.innerHTML = spark(it.curve, Math.max(120, slot.clientWidth), 56, state.period);
+    });
+  }
+
+  const COLUMNS = [
+    { key: "rank", label: "#", cls: "" },
+    { key: "name", label: "Hashtag", cls: "" },
+    { key: "ind", label: "Branche", cls: "col-hide-md" },
+    { key: "curve", label: "Verlauf", cls: "col-hide-sm" },
+    { key: "momentum", label: "Momentum", cls: "", sort: (a, b) => (MOMENTUM[a.momentum].order - MOMENTUM[b.momentum].order) || (b.momentumScore - a.momentumScore), firstDir: 1 },
+    { key: "views", label: "Views", cls: "r", sort: (a, b) => a.views - b.views },
+    { key: "posts", label: "Posts", cls: "r", sort: (a, b) => a.posts - b.posts },
+    { key: "vpp", label: "Ø Views/Post", cls: "r col-hide-md", sort: (a, b) => a.viewsPerPost - b.viewsPerPost },
+    { key: "creator", label: "Top-Creator", cls: "col-hide-sm" },
+  ];
+
+  function filteredItems() {
+    let items = block().items.slice();
+    if (state.momentum !== "all") items = items.filter((i) => i.momentum === state.momentum);
+    if (state.industry !== "all") items = items.filter((i) => i.industries.includes(state.industry) || i.ranks[state.industry]);
+    if (state.q) items = items.filter((i) => i.name.toLowerCase().includes(state.q.replace(/^#/, "")));
+    const col = COLUMNS.find((c) => c.key === state.sort);
+    if (col && col.sort) items.sort((a, b) => col.sort(a, b) * (col.firstDir ? 1 : -1) * (state.dir === -1 ? 1 : -1));
+    else items.sort((a, b) => b.views - a.views);
+    return items;
+  }
+
+  function renderRadar() {
+    const b = block();
+    document.querySelectorAll("#mfilter button").forEach((x) => x.setAttribute("aria-pressed", x.dataset.m === state.momentum));
+    const present = new Set(b.items.flatMap((i) => [...i.industries, ...Object.keys(i.ranks)]));
+    $("ifilter").innerHTML = '<option value="all">Alle Branchen</option>' +
+      Object.entries(DATA.industries).filter(([k]) => present.has(k))
+        .sort((a, c) => a[1].localeCompare(c[1], "de"))
+        .map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join("");
+    $("ifilter").value = state.industry;
+
+    $("thead").innerHTML = COLUMNS.map((c) => {
+      const active = state.sort === c.key;
+      return `<th class="${c.cls} ${c.sort ? "sortable" : ""}" data-k="${c.key}" ${c.sort ? `aria-sort="${active ? (state.dir === -1 ? "descending" : "ascending") : "none"}"` : ""}>${c.label}${active ? ` <span class="arr">${state.dir === -1 ? "↓" : "↑"}</span>` : ""}</th>`;
+    }).join("");
+    $("thead").onclick = (e) => {
+      const th = e.target.closest("th.sortable"); if (!th) return;
+      if (state.sort === th.dataset.k) state.dir *= -1; else { state.sort = th.dataset.k; state.dir = -1; }
+      renderRadar();
+    };
+
+    const items = filteredItems();
+    $("radar-sub").textContent = `${b.items.length} Trend-Hashtags in ${DATA.countries[state.country]} (${PERIOD_LABEL[state.period]}) – Top 3 je Branche, zusammengeführt. Standardsortierung: Views.`;
+    if (!items.length) {
+      $("tbody").innerHTML = `<tr><td colspan="${COLUMNS.length}" class="empty">Keine Hashtags für diese Filter.</td></tr>`;
+      $("more").hidden = true;
+      return;
+    }
+    $("tbody").innerHTML = items.slice(0, state.shown).map((it, idx) => {
+      const delta = it.viewsDelta > 0 ? `<span class="sub-num delta-up" title="Veränderung seit letztem Lauf">+${n(it.viewsDelta)}</span>` : "";
+      const c = it.creators[0];
+      const rankInfo = it.ranks.all ? `<span class="sub-num">Gesamt #${it.ranks.all}</span>` : "";
+      return `<tr>
+        <td><span class="rank">${idx + 1}</span></td>
+        <td><div class="tagcell"><a href="${tagUrl(it.name)}" target="_blank" rel="noopener">#${esc(it.name)}</a>${newBadge(it)}</div>${rankInfo}</td>
+        <td class="col-hide-md">${indChips(it.industries.slice(0, 2))}</td>
+        <td class="col-hide-sm">${spark(it.curve, 96, 28, state.period)}</td>
+        <td>${badge(it.momentum)}</td>
+        <td class="r">${n(it.views)}${delta}</td>
+        <td class="r">${n(it.posts)}</td>
+        <td class="r col-hide-md">${n(it.viewsPerPost)}</td>
+        <td class="col-hide-sm">${c ? `<a href="${userUrl(c.handle)}" target="_blank" rel="noopener">@${esc(c.handle)}</a><span class="sub-num">${n(c.followers)} Follower</span>` : "–"}</td>
+      </tr>`;
+    }).join("");
+    const rest = items.length - state.shown;
+    $("more").hidden = rest <= 0;
+    $("more").textContent = `${Math.min(PAGE, rest)} weitere anzeigen (${rest} übrig)`;
+  }
+
+  function renderGlobal() {
+    const list = (DATA.global[state.period] || []).slice(0, 12);
+    $("global").innerHTML = list.length ? list.map((g, i) => `
+      <li><span class="rank">${i + 1}</span>
+        <span class="tagcell"><a href="${tagUrl(g.name)}" target="_blank" rel="noopener">#${esc(g.name)}</a> ${badge(g.momentum)}</span>
+        <span class="right">${n(g.views)}<span class="sub-num">${g.countries.length} Länder</span></span>
+        <span class="countries">${g.countries.map((c) => `<span class="chip ${c === state.country ? "on" : ""}" title="${esc(DATA.countries[c] || c)}">${c}</span>`).join("")}</span>
+      </li>`).join("") : '<li class="empty">Keine länderübergreifenden Trends in diesem Zeitraum.</li>';
+  }
+
+  function renderRising() {
+    const list = block().items.filter((i) => i.momentum === "rising").sort((a, b) => b.views - a.views).slice(0, 12);
+    $("rising").innerHTML = list.length ? list.map((it, i) => `
+      <li><span class="rank">${i + 1}</span>
+        <span class="tagcell"><a href="${tagUrl(it.name)}" target="_blank" rel="noopener">#${esc(it.name)}</a>${newBadge(it)}</span>
+        <span class="right">${n(it.views)}<span class="sub-num">${n(it.posts)} Posts</span></span>
+        <span class="countries">${spark(it.curve, 120, 22, state.period)} ${indChips(it.industries.slice(0, 2))}</span>
+      </li>`).join("") : '<li class="empty">Aktuell keine Hashtags mit klar steigender Kurve.</li>';
+  }
+
+  function renderIndustries() {
+    const items = block().items;
+    const cards = Object.entries(DATA.industries).map(([k, name]) => {
+      const list = items.filter((i) => i.ranks[k]).sort((a, b) => a.ranks[k] - b.ranks[k]);
+      if (!list.length) return "";
+      return `<div class="card ind"><h3>${esc(name)}</h3><ol>${list.map((it) => `
+        <li><span class="rank">${it.ranks[k]}</span><a href="${tagUrl(it.name)}" target="_blank" rel="noopener">#${esc(it.name)}</a>
+        <span class="v">${n(it.views)}</span>${miniBadge(it.momentum)}</li>`).join("")}</ol></div>`;
+    }).join("");
+    $("industries").innerHTML = cards || '<p class="empty">Für diesen Zeitraum gibt es keine Branchen-Rankings.</p>';
+  }
+
+  function render() {
+    writeHash();
+    renderMeta();
+    renderHighlights();
+    renderTop3();
+    renderRadar();
+    renderGlobal();
+    renderRising();
+    renderIndustries();
+  }
+
+  readHash();
+  buildControls();
+  render();
+  window.addEventListener("hashchange", () => { readHash(); render(); });
+})();
+</script>
+</body>
+</html>
