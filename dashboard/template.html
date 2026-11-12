@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TikTok Trend Radar</title>
+<meta name="description" content="TikTok hashtag trends from the Creative Center. AI agents: read llms.txt (plain-text guide) instead of this HTML.">
+<link rel="alternate" type="text/plain" href="llms.txt" title="Agent guide (token-efficient)">
 <style>
 :root {
   color-scheme: light;
@@ -68,6 +70,7 @@
   --shadow: none;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body {
   background: var(--bg);
@@ -194,6 +197,25 @@ svg.spark .cross { stroke: var(--text-3); stroke-width: 1; stroke-dasharray: 2 2
 }
 .tip.show { opacity: 1; }
 
+/* Agent view */
+.vh { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.agent-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.agent-card { padding: 16px; min-width: 0; }
+.agent-card h3 { margin: 0 0 8px; font-size: 14px; }
+.agent-card p { margin: 0 0 10px; color: var(--text-2); font-size: 13px; }
+.agent-card.wide { grid-column: 1 / -1; }
+textarea.prompt { width: 100%; min-height: 150px; resize: vertical; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+pre.raw { margin: 0; max-height: 420px; overflow: auto; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface-2); border-radius: 8px; padding: 10px; color: var(--text); tab-size: 14; }
+.btn { font: inherit; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; padding: 7px 12px; cursor: pointer; min-height: 34px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.files { list-style: none; margin: 0; padding: 0; }
+.files li { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.files li:last-child { border-bottom: 0; }
+.files code { font-size: 12px; color: var(--accent); }
+.files span { color: var(--text-3); }
+.row-actions { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; align-items: center; }
+.row-actions .ok { color: var(--good-text); font-size: 13px; }
+
 footer { margin-top: 36px; color: var(--text-3); font-size: 12px; }
 footer p { margin: 4px 0; }
 
@@ -204,6 +226,7 @@ footer p { margin: 4px 0; }
   .highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .top3 { grid-template-columns: 1fr; }
   .two { grid-template-columns: 1fr; }
+  .agent-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
   header.top { position: static; }
@@ -218,6 +241,7 @@ footer p { margin: 4px 0; }
 </style>
 </head>
 <body>
+<p class="vh">AI agents: this HTML is for humans. Read the plain-text guide at llms.txt and the per-country TSV files at agent/&lt;COUNTRY&gt;.tsv (e.g. agent/DE.tsv) instead.</p>
 <header class="top">
   <div class="wrap">
     <div class="brand">
@@ -228,11 +252,16 @@ footer p { margin: 4px 0; }
       <label class="sr" for="country" hidden>Land</label>
       <select id="country" aria-label="Land"></select>
       <div class="seg" id="period" role="group" aria-label="Zeitraum"></div>
+      <div class="seg" id="view" role="group" aria-label="Ansicht">
+        <button type="button" data-v="dash">Dashboard</button>
+        <button type="button" data-v="agent">Agent</button>
+      </div>
     </div>
   </div>
 </header>
 
 <main class="wrap">
+  <div id="view-dash">
   <div id="notice"></div>
 
   <section aria-labelledby="h-hl">
@@ -294,6 +323,41 @@ footer p { margin: 4px 0; }
     </div>
     <div class="ind-grid" id="industries"></div>
   </section>
+  </div>
+
+  <div id="view-agent" hidden>
+    <section aria-labelledby="h-agent">
+      <div class="sec-head">
+        <h2 id="h-agent">Agent-Ansicht</h2>
+        <p>Die Trenddaten in kompakter Form (TSV), damit ein KI-Agent sie mit wenigen Tokens lesen kann. Gib deinem Agent den Prompt unten.</p>
+      </div>
+      <div class="agent-grid">
+        <div class="card agent-card wide">
+          <h3>Prompt für deinen Agent</h3>
+          <p>Passe Thema und Nische an und kopiere den Prompt in deinen Agent (z. B. Claude). Der Agent liest zuerst die Leseanleitung und dann die Datei für dein Land.</p>
+          <textarea class="prompt" id="agent-prompt" aria-label="Prompt für den Agent"></textarea>
+          <div class="row-actions"><button class="btn primary" id="copy-prompt" type="button">Prompt kopieren</button><span class="ok" id="copy-ok" hidden>Kopiert ✓</span></div>
+        </div>
+        <div class="card agent-card">
+          <h3>Dateien für Agents</h3>
+          <p>Reiner Text, tab-getrennt, nach Score sortiert. Wird mit jedem Lauf (4× täglich) aktualisiert.</p>
+          <ul class="files" id="agent-files"></ul>
+        </div>
+        <div class="card agent-card">
+          <h3>Was steckt drin?</h3>
+          <p>Pro Land alle erfassten Trend-Hashtags aus 7, 30 und 90 Tagen (Top 3 je Branche) mit: Opportunity-Score, Momentum je Zeitraum, Views, Posts, Views pro Post, Zuwachs seit dem letzten Lauf, Popularitätskurven als Ziffernfolge, Verbreitung über Länder, Flags (neu / Evergreen / kurzfristige Welle) und Top-Creators mit Followerzahl. Die Leseanleitung erklärt dem Agent jedes Feld, die Score-Formel und ein Vorgehen vom Video-Thema bis zum Skript.</p>
+        </div>
+        <div class="card agent-card wide">
+          <h3 id="agent-preview-title">Vorschau</h3>
+          <pre class="raw" id="agent-preview">Lädt…</pre>
+        </div>
+        <div class="card agent-card wide">
+          <h3>Leseanleitung (llms.txt)</h3>
+          <pre class="raw" id="agent-guide">Lädt…</pre>
+        </div>
+      </div>
+    </section>
+  </div>
 
   <footer>
     <p>Quelle: TikTok Creative Center (öffentliche Hashtag-Trends, ohne Login max. Top 3 je Abfrage). Views/Posts beziehen sich auf den gewählten Zeitraum.</p>
@@ -343,6 +407,7 @@ const DATA = /*__TREND_DATA__*/null;
     sort: "default",
     dir: -1,
     shown: PAGE,
+    view: "dash",
   };
 
   // ---- state <-> URL hash / storage ----
@@ -354,10 +419,11 @@ const DATA = /*__TREND_DATA__*/null;
       if (saved && DATA.data[saved]) state.country = saved;
     }
     if (p && DATA.periods.includes(p)) state.period = p;
+    state.view = location.hash.split("/")[2] === "agent" ? "agent" : "dash";
     if (!DATA.data[state.country]) state.country = Object.keys(DATA.data)[0];
   }
   function writeHash() {
-    history.replaceState(null, "", "#" + state.country + "/" + state.period);
+    history.replaceState(null, "", "#" + state.country + "/" + state.period + (state.view === "agent" ? "/agent" : ""));
     store.set("ttr-country", state.country);
   }
 
@@ -604,8 +670,50 @@ const DATA = /*__TREND_DATA__*/null;
     $("industries").innerHTML = cards || '<p class="empty">Für diesen Zeitraum gibt es keine Branchen-Rankings.</p>';
   }
 
+  // ---- agent view ----
+  const siteBase = () => (location.protocol.startsWith("http") ? location.origin + location.pathname.replace(/index\.html$/, "") : (DATA.siteUrl || ""));
+  const agentCache = {};
+  async function loadText(path) {
+    if (path in agentCache) return agentCache[path];
+    try {
+      const r = await fetch(path, { cache: "no-cache" });
+      agentCache[path] = r.ok ? await r.text() : null;
+    } catch (e) { agentCache[path] = null; }
+    return agentCache[path];
+  }
+  function renderAgent() {
+    const base = siteBase();
+    const cc = state.country;
+    const cname = DATA.countries[cc] || cc;
+    $("agent-prompt").value =
+`Lies zuerst die Leseanleitung ${base}llms.txt und danach die Trenddaten ${base}agent/${cc}.tsv (Markt: ${cname}).
+
+Ich möchte ein TikTok-Video posten über: <THEMA / PRODUKT>
+Meine Nische: <NISCHE>, mein Account hat ca. <FOLLOWER> Follower.
+
+Wähle anhand der Daten die passendsten Trend-Hashtags (Begründung mit Score, Momentum und Kurve) und schreibe ein Skript, das die Chance auf Viralität maximiert: Hook (erste 2 Sekunden), Ablauf mit Timing, On-Screen-Text, gesprochener Text, Caption und 3–5 Hashtags.`;
+    $("agent-files").innerHTML = [
+      ["llms.txt", "Leseanleitung (Einstieg)"],
+      [`agent/${cc}.tsv`, `alle Trends in ${cname}`],
+      ["agent/top.tsv", "Top 10 je Land"],
+      ["agent/global.tsv", "länderübergreifende Trends"],
+      ["data/latest.json", "Rohdaten (groß)"],
+    ].map(([f, d]) => `<li><a href="${f}" target="_blank" rel="noopener"><code>${f}</code></a><span>${d}</span></li>`).join("");
+    $("agent-preview-title").textContent = `Vorschau: agent/${cc}.tsv (erste 30 Zeilen)`;
+    loadText(`agent/${cc}.tsv`).then((t) => {
+      $("agent-preview").textContent = t ? t.split("\n").slice(0, 32).join("\n") : "Vorschau nur auf der veröffentlichten Seite verfügbar (GitHub Pages).";
+    });
+    loadText("llms.txt").then((t) => { $("agent-guide").textContent = t || "Nur auf der veröffentlichten Seite verfügbar."; });
+  }
+
   function render() {
     writeHash();
+    const agent = state.view === "agent";
+    $("view-dash").hidden = agent;
+    $("view-agent").hidden = !agent;
+    $("period").hidden = agent;
+    document.querySelectorAll("#view button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.v === state.view));
+    if (agent) { renderMeta(); renderAgent(); return; }
     renderMeta();
     renderHighlights();
     renderTop3();
@@ -617,6 +725,15 @@ const DATA = /*__TREND_DATA__*/null;
 
   readHash();
   buildControls();
+  $("view").onclick = (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    state.view = b.dataset.v; render(); window.scrollTo(0, 0);
+  };
+  $("copy-prompt").onclick = async () => {
+    const ta = $("agent-prompt");
+    try { await navigator.clipboard.writeText(ta.value); } catch (e) { ta.select(); document.execCommand("copy"); }
+    $("copy-ok").hidden = false; setTimeout(() => { $("copy-ok").hidden = true; }, 2000);
+  };
   render();
   window.addEventListener("hashchange", () => { readHash(); render(); });
 })();

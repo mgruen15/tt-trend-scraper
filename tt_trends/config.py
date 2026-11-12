@@ -76,8 +76,37 @@ INDUSTRIES: dict[int, str] = {
 PERIODS: dict[int, bool] = {
     7: True,
     30: True,
-    90: False,
+    90: True,
 }
+
+# Long curves (90 daily points) are averaged down to this many points for output.
+MAX_CURVE_POINTS = 30
+
+# Short English industry slugs for the token-efficient agent files.
+INDUSTRY_SLUGS: dict[int, str] = {
+    10000000000: "edu",
+    11000000000: "auto",
+    12000000000: "baby",
+    13000000000: "finance",
+    14000000000: "beauty",
+    15000000000: "tech",
+    16000000000: "appliances",
+    17000000000: "travel",
+    18000000000: "household",
+    19000000000: "pets",
+    20000000000: "apps",
+    21000000000: "diy",
+    22000000000: "fashion",
+    23000000000: "entertainment",
+    24000000000: "business",
+    25000000000: "games",
+    27000000000: "food",
+    28000000000: "sports",
+    29000000000: "health",
+}
+
+# Public base URL of the GitHub Pages site (used in the agent guide).
+SITE_URL = "https://mgruen15.github.io/tt-trend-scraper/"
 
 DEFAULT_COUNTRY = "DE"
 

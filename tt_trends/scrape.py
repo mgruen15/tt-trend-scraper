@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from . import analysis, config, render
+from . import agent, analysis, config, render
 from .client import ApiError, fetch_hashtags
 
 log = logging.getLogger("tt_trends")
@@ -60,8 +60,13 @@ def run(countries: list[str], workers: int) -> tuple[dict, dict]:
             if not lists:
                 continue
             items = analysis.merge_lists(lists)
+            for item in items:  # momentum is computed on the full curve; shrink for output
+                item["curve"] = analysis.downsample(item["curve"], config.MAX_CURVE_POINTS)
             top = [i["name"] for i in items if "all" in i["ranks"]]
-            data.setdefault(country, {})[str(period)] = {"items": items, "top": top}
+            data_until = max((i["curveEnd"] for i in items), default=0)
+            data.setdefault(country, {})[str(period)] = {
+                "items": items, "top": top, "dataUntil": data_until,
+            }
 
     stats = {"requests": len(jobs), "failed": len(failed), "failedLists": failed[:50]}
     return data, stats
@@ -100,6 +105,7 @@ def main(argv: list[str] | None = None) -> int:
     latest = {
         "generatedAt": now.isoformat(timespec="seconds"),
         "defaultCountry": config.DEFAULT_COUNTRY,
+        "siteUrl": config.SITE_URL,
         "countries": {c: config.COUNTRIES[c] for c in countries},
         "industries": {analysis.industry_key(k): v for k, v in config.INDUSTRIES.items()},
         "periods": [str(p) for p in config.PERIODS],
@@ -113,6 +119,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     history_path.write_text(json.dumps(history, ensure_ascii=False, separators=(",", ":")))
     render.render_dashboard(latest, args.out)
+    agent.write_agent_files(latest, args.out)
 
     total = sum(len(b["items"]) for p in data.values() for b in p.values())
     log.info("Done: %d hashtag entries, %d failed lists.", total, stats["failed"])

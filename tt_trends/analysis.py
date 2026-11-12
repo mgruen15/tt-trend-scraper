@@ -22,7 +22,8 @@ def industry_key(industry_id: int | str) -> str:
 
 def normalize_item(raw: dict) -> dict:
     """Reduce a raw API item to the fields the dashboard needs."""
-    curve = [round(float(p.get("value") or 0)) for p in raw.get("popularityCurve") or []]
+    points = raw.get("popularityCurve") or []
+    curve = [round(float(p.get("value") or 0)) for p in points]
     creators = [
         {
             "handle": c.get("handleName") or "",
@@ -37,6 +38,7 @@ def normalize_item(raw: dict) -> dict:
         "posts": _int(raw.get("publishCnt")),
         "industries": sorted({industry_key(i) for i in raw.get("industryIDs") or []}, key=int),
         "curve": curve,
+        "curveEnd": _int(points[-1].get("timestamp")) if points else 0,
         "creators": creators,
     }
 
@@ -70,6 +72,18 @@ def momentum(curve: list[float]) -> tuple[str, int]:
     if rel_last >= 60:
         return "peak", score
     return "fading", score
+
+
+def downsample(curve: list[int], target: int) -> list[int]:
+    """Average a long curve into `target` buckets (keeps the last point exact-ish)."""
+    n = len(curve)
+    if n <= target:
+        return curve
+    out = []
+    for b in range(target):
+        lo, hi = b * n // target, (b + 1) * n // target
+        out.append(round(mean(curve[lo:hi])))
+    return out
 
 
 def merge_lists(lists: dict[str, list[dict]]) -> list[dict]:

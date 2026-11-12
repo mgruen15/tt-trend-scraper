@@ -20,6 +20,34 @@ HTML-Dashboard (`index.html`, Daten eingebettet – funktioniert auch offline pe
 
 Land und Zeitraum (7 / 30 / 90 Tage) sind oben umschaltbar; der Zustand steht in der URL (`#DE/7`).
 
+## Agent-Ansicht (für KI-Agents)
+
+Oben rechts auf **Agent** umschalten (oder `#DE/7/agent`). Dort gibt es einen fertigen Prompt zum Kopieren.
+Die Daten liegen zusätzlich als reiner Text vor, damit ein Agent sie mit wenigen Tokens lesen kann:
+
+| Datei | Inhalt |
+|---|---|
+| [`llms.txt`](https://mgruen15.github.io/tt-trend-scraper/llms.txt) | Leseanleitung für Agents: Spalten, Score-Formel, Vorgehen vom Thema zum Skript |
+| `agent/<LAND>.tsv` (z. B. [`agent/DE.tsv`](https://mgruen15.github.io/tt-trend-scraper/agent/DE.tsv)) | alle ~150 Trend-Hashtags des Landes aus 7/30/90 Tagen, nach Opportunity-Score sortiert (~7K Tokens) |
+| `agent/top.tsv` | Top 10 je Land |
+| `agent/global.tsv` | länderübergreifende Trends |
+
+Pro Hashtag: Score (0–100), Branche, offizieller Rang, Momentum je Zeitraum, Views, Posts, Views/Post,
+Views-Zuwachs seit dem letzten Lauf, Popularitätskurven als Ziffernfolge (`0125799`), Verbreitung über Länder,
+Flags (N = neu, E = Evergreen, X = kurzfristige Welle) und Top-Creators mit Followerzahl.
+
+Der **Opportunity-Score** setzt sich zusammen aus: Momentum der letzten 7 Tage, Views pro Post im Vergleich zum Land
+(wenig Konkurrenz), ob kleine Creator unter den Top-Creators sind, Verbreitung über Länder und Frische.
+Die genaue Formel steht in `llms.txt`.
+
+Beispiel-Prompt:
+
+```
+Lies https://mgruen15.github.io/tt-trend-scraper/llms.txt und danach .../agent/DE.tsv.
+Ich möchte ein TikTok-Video über <Thema> posten (Nische: <Nische>). Wähle passende Trend-Hashtags
+und schreibe ein Skript, das die Chance auf Viralität maximiert.
+```
+
 **Momentum** wird aus der Popularitätskurve (0–100, normiert auf den Höchstwert im Zeitraum) abgeleitet:
 ▲ *Steigend* (Höchstwert ganz aktuell, Kurve klar wachsend) · ● *Hoch* (≥ 60 % des Höchstwerts) ·
 ▼ *Abflauend* (Höhepunkt vorbei, < 60 %).
@@ -28,12 +56,11 @@ Land und Zeitraum (7 / 30 / 90 Tage) sind oben umschaltbar; der Zustand steht in
 
 Das Creative Center ist inzwischen Teil von „TikTok One". Ohne Login liefert der Endpunkt
 `POST /CreativeOne/KnowledgeAPI/GetHashtagList` **max. die Top 3 pro Abfrage**. Der Scraper fragt deshalb
-jede Kombination aus Land × Branche × Zeitraum einzeln ab (1.107 Requests, ~2,5 Min.):
+jede Kombination aus Land × Branche × Zeitraum einzeln ab:
+27 Länder × (Gesamt + 19 Branchen) × 7/30/90 Tage = 1.620 Requests (~4 Min.).
 
-- 27 Länder × (Gesamt + 19 Branchen) × 7 und 30 Tage
-- 27 Länder × Gesamt × 90 Tage (für 90 Tage gibt es nur das Gesamt-Ranking)
-
-Video-, Creator- und Song-Trends sowie Hashtag-Details erfordern inzwischen einen Login und sind daher nicht enthalten.
+Top Ads, Video-, Creator- und Song-Trends sowie Hashtag-Details erfordern inzwischen einen Login bzw. signierte
+Anfragen und sind daher bewusst nicht enthalten.
 Die API ist inoffiziell – ändert TikTok sie, schlägt der Lauf fehl (bei > 30 % Fehlern werden keine Daten überschrieben).
 
 ## Wo liegen die Ergebnisse?
@@ -43,6 +70,8 @@ mit dem aktuellen Stand (so wächst das Repo nicht mit jedem Lauf):
 
 ```
 index.html          # Dashboard (Daten eingebettet)
+llms.txt            # Leseanleitung für Agents
+agent/*.tsv         # token-effiziente Trenddaten für Agents
 data/latest.json    # aktuelle Daten als JSON
 data/history.json   # rollierende Historie (für "NEU" und Views-Zuwachs)
 ```
@@ -72,10 +101,12 @@ tt_trends/client.py     API-Client (Retries, Backoff)
 tt_trends/analysis.py   Zusammenführen, Momentum, globale Trends, Historie
 tt_trends/scrape.py     Einstiegspunkt
 tt_trends/render.py     Dashboard aus dashboard/template.html erzeugen
+tt_trends/agent.py      Agent-Export (llms.txt, agent/*.tsv) inkl. Opportunity-Score
 .github/workflows/scrape.yml   Cron 4×/Tag (05:17, 11:17, 17:17, 23:17 UTC) + manueller Start
 ```
 
 ## Kosten
 
-Ein Lauf dauert ~3–4 Minuten. 4 Läufe/Tag ≈ 500 Actions-Minuten/Monat – passt in das kostenlose
-Kontingent privater Repos (2.000 Min./Monat); öffentliche Repos sind ohnehin kostenlos.
+Öffentliches Repo: GitHub Actions und Pages sind kostenlos. Ein Lauf dauert ~5 Minuten.
+Damit GitHub den Zeitplan nicht nach 60 Tagen ohne Repo-Aktivität abschaltet, aktiviert sich der Workflow
+bei jedem Lauf selbst neu (Keepalive-Schritt).
