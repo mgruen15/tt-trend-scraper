@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  actions: write # für den Keepalive-Schritt
 
 concurrency:
   group: scrape
@@ -69,3 +70,16 @@ jobs:
           git add -A
           git commit -q -m "Trends $(date -u +'%Y-%m-%d %H:%M') UTC"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" "HEAD:$DATA_BRANCH"
+
+      # GitHub deaktiviert geplante Workflows in öffentlichen Repos nach 60 Tagen
+      # ohne Repo-Aktivität. Das erneute "Enable" über die API setzt diesen Zähler
+      # zurück (gleicher Ansatz wie gautamkrishnar/keepalive-workflow v2), ohne
+      # Dummy-Commits zu erzeugen. Schlägt der Schritt fehl, bleibt der Lauf grün.
+      - name: Keep scheduled workflow alive
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X PUT "repos/${{ github.repository }}/actions/workflows/scrape.yml/enable"
+          echo "Workflow re-enabled – 60-day inactivity timer reset."
