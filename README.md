@@ -1,5 +1,7 @@
 # TikTok Trend Radar
 
+**Live-Dashboard: https://mgruen15.github.io/tt-trend-scraper/**
+
 Scraper + Dashboard für die viralsten Hashtags aus dem
 [TikTok Creative Center](https://ads.tiktok.com/creative/creativeCenter/trends/hashtag).
 Läuft 4× täglich über GitHub Actions und erzeugt ein einzelnes, eigenständiges
@@ -48,7 +50,7 @@ data/history.json   # rollierende Historie (für "NEU" und Views-Zuwachs)
 Ansehen:
 
 - **Lokal:** `git fetch origin data && git show origin/data:index.html > trends.html && open trends.html`
-- **GitHub Pages** (nur bei öffentlichem Repo oder GitHub Pro/Team): *Settings → Pages → Branch `data` / root*.
+- **GitHub Pages:** https://mgruen15.github.io/tt-trend-scraper/ (Quelle: Branch `data` / root, wird nach jedem Lauf automatisch neu gebaut).
 
 ## Lokal ausführen
 
