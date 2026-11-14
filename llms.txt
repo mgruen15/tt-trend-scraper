@@ -1,0 +1,41 @@
+# TikTok Trend Radar — agent guide (format ttr1, generated 2026-11-14T12:12Z)
+Source: TikTok Creative Center public hashtag trends, scraped 4x/day. Data lags ~2 days (see data_until).
+Purpose: help you pick hashtags/topics and script a TikTok video with maximum viral potential.
+
+## Files (plain TSV, tab-separated, first line = metadata, second line = column names)
+https://mgruen15.github.io/tt-trend-scraper/agent/<CC>.tsv   all trending hashtags of one country, sorted by score s (desc). <CC> in: DE US GB FR IT ES AR AU BR CA CO EG ID IL JP KR MY MX PH SA SG ZA TW TH TR AE VN
+https://mgruen15.github.io/tt-trend-scraper/agent/top.tsv    top 10 per country (cross-market overview)
+https://mgruen15.github.io/tt-trend-scraper/agent/global.tsv hashtags trending in >=2 countries (p=period days, g=#countries, cc=country list)
+https://mgruen15.github.io/tt-trend-scraper/data/latest.json full raw JSON (large; only if TSV is insufficient)
+Fetch ONLY the country file(s) you need. Default market if user gives none: DE.
+
+## Columns of <CC>.tsv
+s    opportunity score 0-100 (see formula). Higher = better bet to ride now.
+tag  hashtag without '#'. Video page: https://www.tiktok.com/tag/<tag>
+ind  industries (appliances apps auto baby beauty business diy edu entertainment fashion finance food games health household pets sports tech travel); '+' joins several
+top  overall top-3 rank(s) as period:rank, e.g. 7:1|30:3 (official Creative Center ranking)
+m7/m30/m90 momentum of the popularity curve in that period: R=rising (peak is now, growing) H=high (>=60% of peak) F=fading (past peak, <60%) S=no signal; '-' = not in that period's lists
+v7/v30 views in period, p7 posts in last 7d (K/M/B suffixes)
+vpp  average views per post (reach per video; high = undersaturated, each video gets many views)
+dv   views gained since previous scrape (~6h), 7d list
+c7/c30/c90 popularity curve, one digit per point (0=low..9=period peak), oldest->newest. c7 daily (7 pts), c30 ~20 pts, c90 30 pts (3-day buckets)
+g    number of countries where tag currently trends
+fl   flags: N=new (first seen <24h) E=evergreen (in 7d,30d and 90d lists) X=flash (only in 7d list = fresh wave)
+cr   top creators handle:followers (study their videos at https://www.tiktok.com/@<handle>)
+
+## Score formula (max 100)
+s = (momentum7[R40 H25 S10 F0; if absent use 30d: R20 H12] + 20*vpp_percentile_in_country
+     + access[smallest top-creator <10K:15 <100K:10 <1M:5 else 0] + min(g-1,4)*2.5 + fresh[N:+5 X:+5]) *100/95
+Interpretation: R + high vpp + small creators in cr = algorithm currently pushes this tag to newcomers.
+
+## Recipe: from user request to script
+1. Identify user's market (CC) and niche -> map niche to ind slug(s).
+2. Fetch agent/<CC>.tsv. Filter rows whose ind matches the niche; also keep top ~10 rows overall (cross-niche trends to piggyback).
+3. Primary tag: highest s with m7 in R/H. Prefer X/N (early wave) for virality, E for reliable steady reach. Avoid m7=F unless E (evergreen niche).
+4. Read c7: rising tail (e.g. 1259) = post within 24-72h; plateau (9999) = saturated, needs a twist; falling (9631) = too late.
+5. Hashtag set: 1 primary trend tag + 1-2 niche tags from same ind + optionally 1 broad tag with large v7. 3-5 tags total.
+6. Script: hook in the first 1-2 s that explicitly references the trend (sound/format/phrase behind the tag), payoff early, 15-35 s, on-screen text + spoken line mirroring the tag topic, end with a loop or question to drive comments. (General TikTok heuristics, not derived from this data.)
+7. If unsure what a tag is about: inspect https://www.tiktok.com/tag/<tag> and the cr creators before scripting.
+
+## Caveats
+Only top 3 per industry/country/period are public, so lists are wide not deep. Rankings come from TikTok's ads Creative Center. Values in a row may come from different period lists.
